@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
@@ -15,15 +17,26 @@ const ALLOWED_MIMETYPES: Record<string, FileType> = {
     FileType.DOCX,
 };
 
+const UPLOADS_BASE = path.resolve('./uploads/resumes');
+
 @Injectable()
 export class ResumesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async upload(
     userId: string,
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     label: string,
   ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    if (!label || label.trim().length === 0) {
+      fs.unlinkSync(file.path);
+      throw new BadRequestException('Label is required');
+    }
+
     const fileType = ALLOWED_MIMETYPES[file.mimetype];
     if (!fileType) {
       fs.unlinkSync(file.path);
@@ -31,7 +44,7 @@ export class ResumesService {
     }
 
     const lastVersion = await this.prisma.resume.findFirst({
-      where: { userId, label },
+      where: { userId, label: label.trim() },
       orderBy: { version: 'desc' },
       select: { version: true },
     });
@@ -41,7 +54,7 @@ export class ResumesService {
     return this.prisma.resume.create({
       data: {
         userId,
-        label,
+        label: label.trim(),
         filePath: file.path,
         fileType,
         version,
@@ -64,7 +77,7 @@ export class ResumesService {
     }
 
     if (resume.userId !== userId) {
-      throw new ForbiddenException();
+      throw new ForbiddenException('Access denied');
     }
 
     return resume;
@@ -73,6 +86,11 @@ export class ResumesService {
   async getFilePath(userId: string, id: string): Promise<string> {
     const resume = await this.findOne(userId, id);
     const absPath = path.resolve(resume.filePath);
+
+    // Guard against path traversal — resolved path must stay within uploads dir
+    if (!absPath.startsWith(UPLOADS_BASE + path.sep) && absPath !== UPLOADS_BASE) {
+      throw new ForbiddenException('Access denied');
+    }
 
     if (!fs.existsSync(absPath)) {
       throw new NotFoundException('File not found on disk');
@@ -83,12 +101,16 @@ export class ResumesService {
 
   async remove(userId: string, id: string) {
     const resume = await this.findOne(userId, id);
+    const absPath = path.resolve(resume.filePath);
 
-    // Delete file from disk (ignore errors if already gone)
     try {
-      fs.unlinkSync(path.resolve(resume.filePath));
-    } catch {
-      // File may have already been removed
+      fs.unlinkSync(absPath);
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT') {
+        // File exists but couldn't be deleted — do not delete the DB record
+        throw new InternalServerErrorException('Failed to delete resume file');
+      }
     }
 
     await this.prisma.resume.delete({ where: { id } });

@@ -3,6 +3,7 @@ import { ApplicationStatus } from '@prisma/client';
 import {
   IsDateString,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -12,11 +13,13 @@ import {
 export class CreateApplicationDto {
   @ApiProperty({ example: 'Acme Corp' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(200)
   company: string;
 
   @ApiProperty({ example: 'Software Engineer' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(200)
   role: string;
 

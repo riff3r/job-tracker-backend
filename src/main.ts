@@ -2,9 +2,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as fs from 'fs';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  fs.mkdirSync('./uploads/resumes', { recursive: true });
+
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
