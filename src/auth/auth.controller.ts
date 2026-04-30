@@ -21,6 +21,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 import { AuthService, TokenPair } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -36,12 +37,11 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
-  // ─── Register ────────────────────────────────────────────────────────────────
-
   @Public()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Account created successfully')
   @ApiOperation({ summary: 'Register a new user with email and password' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
@@ -49,12 +49,11 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  // ─── Login ───────────────────────────────────────────────────────────────────
-
   @Public()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Logged in successfully')
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -62,22 +61,16 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  // ─── Refresh ─────────────────────────────────────────────────────────────────
-
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Token refreshed successfully')
   @ApiOperation({ summary: 'Refresh the access token using a refresh token' })
   @ApiResponse({ status: 200, description: 'New token pair issued' })
-  @ApiResponse({
-    status: 401,
-    description: 'Refresh token invalid or expired',
-  })
+  @ApiResponse({ status: 401, description: 'Refresh token invalid or expired' })
   async refresh(@Body() dto: RefreshDto): Promise<TokenPair> {
     return this.authService.refresh(dto.refreshToken);
   }
-
-  // ─── Logout ──────────────────────────────────────────────────────────────────
 
   @ApiBearerAuth()
   @Post('logout')
@@ -85,14 +78,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and revoke the refresh token' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized — missing/invalid access token' })
-  async logout(
-    @CurrentUser() _user: User,
-    @Body() dto: RefreshDto,
-  ) {
+  async logout(@CurrentUser() _user: User, @Body() dto: RefreshDto) {
     return this.authService.logout(dto.refreshToken);
   }
-
-  // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
   @Public()
   @UseGuards(AuthGuard('google'))

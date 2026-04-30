@@ -135,7 +135,7 @@ export class AuthService {
         // Silently ignore if token does not exist
       });
 
-    return { message: 'Logged out' };
+    return { message: 'Logged out successfully' };
   }
 
   private async generateTokens(user: User): Promise<TokenPair> {

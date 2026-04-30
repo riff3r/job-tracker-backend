@@ -115,6 +115,6 @@ export class ResumesService {
 
     await this.prisma.resume.delete({ where: { id } });
 
-    return { message: 'Resume deleted' };
+    return { message: 'Resume deleted successfully' };
   }
 }

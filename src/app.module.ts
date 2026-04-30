@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ApplicationsModule } from './applications/applications.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { PrismaModule } from './prisma/prisma.module';
 import { ResumesModule } from './resumes/resumes.module';
 import { UsersModule } from './users/users.module';
@@ -25,10 +26,8 @@ import { UsersModule } from './users/users.module';
     ResumesModule,
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })
 export class AppModule {}

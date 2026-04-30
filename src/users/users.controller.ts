@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import type { User } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -25,6 +26,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
+  @ResponseMessage('Profile fetched successfully')
   @ApiOperation({ summary: 'Get the current user profile' })
   @ApiResponse({ status: 200, description: 'User profile' })
   getProfile(@CurrentUser() user: User) {
@@ -32,6 +34,7 @@ export class UsersController {
   }
 
   @Patch('me')
+  @ResponseMessage('Profile updated successfully')
   @ApiOperation({ summary: 'Update the current user profile' })
   @ApiResponse({ status: 200, description: 'Updated profile' })
   updateProfile(@CurrentUser() user: User, @Body() dto: UpdateUserDto) {

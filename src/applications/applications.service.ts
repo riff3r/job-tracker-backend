@@ -138,7 +138,7 @@ export class ApplicationsService {
       data: { deletedAt: new Date() },
     });
 
-    return { message: 'Application deleted' };
+    return { message: 'Application deleted successfully' };
   }
 
   async getActivity(userId: string, id: string) {

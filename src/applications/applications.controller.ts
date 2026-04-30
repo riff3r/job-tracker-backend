@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import type { User } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
@@ -31,6 +32,7 @@ export class ApplicationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Application created successfully')
   @ApiOperation({ summary: 'Create a new job application' })
   @ApiResponse({ status: 201, description: 'Application created' })
   create(@CurrentUser() user: User, @Body() dto: CreateApplicationDto) {
@@ -38,6 +40,7 @@ export class ApplicationsController {
   }
 
   @Get()
+  @ResponseMessage('Applications fetched successfully')
   @ApiOperation({ summary: 'List all job applications (with filtering & pagination)' })
   @ApiResponse({ status: 200, description: 'Paginated list of applications' })
   findAll(@CurrentUser() user: User, @Query() query: QueryApplicationDto) {
@@ -45,6 +48,7 @@ export class ApplicationsController {
   }
 
   @Get(':id')
+  @ResponseMessage('Application fetched successfully')
   @ApiOperation({ summary: 'Get a single job application' })
   @ApiResponse({ status: 200, description: 'Application details' })
   @ApiResponse({ status: 404, description: 'Application not found' })
@@ -53,6 +57,7 @@ export class ApplicationsController {
   }
 
   @Patch(':id')
+  @ResponseMessage('Application updated successfully')
   @ApiOperation({ summary: 'Update a job application' })
   @ApiResponse({ status: 200, description: 'Application updated' })
   @ApiResponse({ status: 404, description: 'Application not found' })
@@ -74,6 +79,7 @@ export class ApplicationsController {
   }
 
   @Get(':id/activity')
+  @ResponseMessage('Activity log fetched successfully')
   @ApiOperation({ summary: 'Get status-change history for an application' })
   @ApiResponse({ status: 200, description: 'Activity log entries' })
   @ApiResponse({ status: 404, description: 'Application not found' })

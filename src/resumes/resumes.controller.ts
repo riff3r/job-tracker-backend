@@ -27,6 +27,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ResponseMessage } from '../common/decorators/response-message.decorator';
 import { ResumesService } from './resumes.service';
 
 const storage = diskStorage({
@@ -45,6 +46,7 @@ export class ResumesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Resume uploaded successfully')
   @UseInterceptors(FileInterceptor('file', { storage }))
   @ApiOperation({ summary: 'Upload a resume (PDF or DOCX)' })
   @ApiConsumes('multipart/form-data')
@@ -69,6 +71,7 @@ export class ResumesController {
   }
 
   @Get()
+  @ResponseMessage('Resumes fetched successfully')
   @ApiOperation({ summary: 'List all resumes for the current user' })
   @ApiResponse({ status: 200, description: 'List of resumes' })
   findAll(@CurrentUser() user: User) {
