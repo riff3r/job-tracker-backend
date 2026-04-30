@@ -47,6 +47,14 @@ export class ApplicationsController {
     return this.applicationsService.findAll(user.id, query);
   }
 
+  @Get('stats')
+  @ResponseMessage('Stats fetched successfully')
+  @ApiOperation({ summary: 'Get application statistics for the current user' })
+  @ApiResponse({ status: 200, description: 'Stats including totals, by status, and weekly breakdown' })
+  getStats(@CurrentUser() user: User) {
+    return this.applicationsService.getStats(user.id);
+  }
+
   @Get(':id')
   @ResponseMessage('Application fetched successfully')
   @ApiOperation({ summary: 'Get a single job application' })

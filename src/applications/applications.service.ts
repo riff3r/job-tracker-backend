@@ -141,6 +141,51 @@ export class ApplicationsService {
     return { message: 'Application deleted successfully' };
   }
 
+  async getStats(userId: string) {
+    const baseWhere = { userId, deletedAt: null as null };
+
+    const [total, thisWeek] = await this.prisma.$transaction([
+      this.prisma.application.count({ where: baseWhere }),
+      this.prisma.application.count({
+        where: {
+          ...baseWhere,
+          createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
+      }),
+    ]);
+
+    const statusGroups = await this.prisma.application.groupBy({
+      by: ['status'],
+      where: baseWhere,
+      _count: { _all: true },
+      orderBy: { status: 'asc' },
+    });
+
+    const byStatus = Object.fromEntries(
+      statusGroups.map((g) => [g.status, g._count._all]),
+    );
+
+    const perWeek = await this.prisma.$queryRaw<{ week: Date; count: bigint }[]>`
+      SELECT DATE_TRUNC('week', "createdAt") AS week, COUNT(*) AS count
+      FROM "Application"
+      WHERE "userId" = ${userId}
+        AND "deletedAt" IS NULL
+        AND "createdAt" >= NOW() - INTERVAL '8 weeks'
+      GROUP BY week
+      ORDER BY week ASC
+    `;
+
+    return {
+      total,
+      byStatus,
+      thisWeek,
+      perWeek: perWeek.map((row) => ({
+        week: row.week,
+        count: Number(row.count),
+      })),
+    };
+  }
+
   async getActivity(userId: string, id: string) {
     await this.findOne(userId, id);
 
