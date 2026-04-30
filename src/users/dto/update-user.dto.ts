@@ -11,5 +11,6 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'https://example.com/avatar.png' })
   @IsOptional()
   @IsUrl()
+  @MaxLength(2048)
   avatarUrl?: string;
 }
