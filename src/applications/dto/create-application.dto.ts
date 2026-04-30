@@ -33,11 +33,17 @@ export class CreateApplicationDto {
   @IsEnum(LocationType)
   location?: LocationType;
 
-  @ApiPropertyOptional({ example: '$120,000 - $150,000' })
+  @ApiPropertyOptional({ example: '$120,000 - $150,000', description: "Job's posted salary" })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   salary?: string;
+
+  @ApiPropertyOptional({ example: '$130,000', description: 'Your expected salary or the salary you applied with' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  expectedSalary?: string;
 
   @ApiPropertyOptional({ example: 'Referred by Jane Doe' })
   @IsOptional()

@@ -51,8 +51,9 @@ model Application {
   role         String
   jobUrl       String?
   location     LocationType @default(ONSITE)
-  salary       String?
-  notes        String?
+  salary         String?
+  expectedSalary String?
+  notes          String?
   status       ApplicationStatus @default(WISHLIST)
   appliedAt    DateTime?
   followUpDate DateTime?
