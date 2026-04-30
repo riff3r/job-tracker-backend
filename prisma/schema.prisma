@@ -17,6 +17,12 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+enum LocationType {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
 enum FileType {
   PDF
   DOCX
@@ -44,7 +50,7 @@ model Application {
   company      String
   role         String
   jobUrl       String?
-  location     String?
+  location     LocationType @default(ONSITE)
   salary       String?
   notes        String?
   status       ApplicationStatus @default(WISHLIST)
