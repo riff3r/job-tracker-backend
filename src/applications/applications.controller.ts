@@ -55,6 +55,15 @@ export class ApplicationsController {
     return this.applicationsService.getStats(user.id);
   }
 
+  @Get('recent-activity')
+  @ResponseMessage('Recent activity fetched successfully')
+  @ApiOperation({ summary: 'Get recent activity log entries across all applications' })
+  @ApiResponse({ status: 200, description: 'Latest status changes (default 20)' })
+  getRecentActivity(@CurrentUser() user: User, @Query('limit') limit?: string) {
+    const parsed = limit ? Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100) : 20;
+    return this.applicationsService.getRecentActivity(user.id, parsed);
+  }
+
   @Get(':id')
   @ResponseMessage('Application fetched successfully')
   @ApiOperation({ summary: 'Get a single job application' })

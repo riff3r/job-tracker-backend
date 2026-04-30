@@ -254,6 +254,56 @@ describe('ApplicationsService', () => {
     });
   });
 
+  // ─── findAll filters ───────────────────────────────────────────────────────
+
+  describe('findAll filters', () => {
+    it('passes followUpDate range filter to Prisma', async () => {
+      mockPrisma.$transaction.mockResolvedValue([[], 0]);
+
+      await service.findAll(USER_ID, {
+        followUpDateAfter: '2026-04-30T00:00:00.000Z',
+        followUpDateBefore: '2026-05-07T00:00:00.000Z',
+      });
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+    });
+  });
+
+  // ─── getRecentActivity ─────────────────────────────────────────────────────
+
+  describe('getRecentActivity', () => {
+    it('returns recent activity logs with application info', async () => {
+      const logs = [
+        {
+          id: 'log-1',
+          toStatus: ApplicationStatus.INTERVIEW,
+          application: { id: APP_ID, company: 'Acme', role: 'Engineer' },
+        },
+      ];
+      mockPrisma.activityLog.findMany.mockResolvedValue(logs);
+
+      const result = await service.getRecentActivity(USER_ID, 10);
+
+      expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: USER_ID, application: { deletedAt: null } },
+          take: 10,
+        }),
+      );
+      expect(result).toEqual(logs);
+    });
+
+    it('defaults to 20 items when limit is not provided', async () => {
+      mockPrisma.activityLog.findMany.mockResolvedValue([]);
+
+      await service.getRecentActivity(USER_ID);
+
+      expect(mockPrisma.activityLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 20 }),
+      );
+    });
+  });
+
   // ─── getActivity ───────────────────────────────────────────────────────────
 
   describe('getActivity', () => {

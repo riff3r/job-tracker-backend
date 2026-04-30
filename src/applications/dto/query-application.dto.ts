@@ -1,7 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ApplicationStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class QueryApplicationDto {
   @ApiPropertyOptional({ enum: ApplicationStatus })
@@ -14,6 +23,22 @@ export class QueryApplicationDto {
   @IsString()
   @MaxLength(500)
   search?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-05-07T00:00:00.000Z',
+    description: 'Return applications with followUpDate on or before this date',
+  })
+  @IsOptional()
+  @IsDateString()
+  followUpDateBefore?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-04-30T00:00:00.000Z',
+    description: 'Return applications with followUpDate on or after this date',
+  })
+  @IsOptional()
+  @IsDateString()
+  followUpDateAfter?: string;
 
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

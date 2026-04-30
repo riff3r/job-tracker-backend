@@ -44,8 +44,25 @@ export class ApplicationsService {
   }
 
   async findAll(userId: string, query: QueryApplicationDto) {
-    const { status, search, page = 1, limit = 20 } = query;
+    const {
+      status,
+      search,
+      followUpDateBefore,
+      followUpDateAfter,
+      page = 1,
+      limit = 20,
+    } = query;
     const skip = (page - 1) * limit;
+
+    const followUpDateFilter =
+      followUpDateBefore || followUpDateAfter
+        ? {
+            followUpDate: {
+              ...(followUpDateAfter && { gte: new Date(followUpDateAfter) }),
+              ...(followUpDateBefore && { lte: new Date(followUpDateBefore) }),
+            },
+          }
+        : {};
 
     const where = {
       userId,
@@ -57,6 +74,7 @@ export class ApplicationsService {
           { role: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
+      ...followUpDateFilter,
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -184,6 +202,19 @@ export class ApplicationsService {
         count: Number(row.count),
       })),
     };
+  }
+
+  async getRecentActivity(userId: string, limit = 20) {
+    return this.prisma.activityLog.findMany({
+      where: { userId, application: { deletedAt: null } },
+      orderBy: { changedAt: 'desc' },
+      take: limit,
+      include: {
+        application: {
+          select: { id: true, company: true, role: true },
+        },
+      },
+    });
   }
 
   async getActivity(userId: string, id: string) {
