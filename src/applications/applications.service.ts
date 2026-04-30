@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus, LocationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
@@ -20,7 +20,7 @@ export class ApplicationsService {
         company: dto.company,
         role: dto.role,
         jobUrl: dto.jobUrl,
-        location: dto.location,
+        location: dto.location ?? LocationType.ONSITE,
         salary: dto.salary,
         notes: dto.notes,
         status: dto.status ?? ApplicationStatus.WISHLIST,

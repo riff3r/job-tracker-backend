@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus, LocationType } from '@prisma/client';
 import {
   IsDateString,
   IsEnum,
@@ -28,11 +28,10 @@ export class CreateApplicationDto {
   @IsUrl()
   jobUrl?: string;
 
-  @ApiPropertyOptional({ example: 'Remote' })
+  @ApiPropertyOptional({ enum: LocationType, default: LocationType.ONSITE })
   @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  location?: string;
+  @IsEnum(LocationType)
+  location?: LocationType;
 
   @ApiPropertyOptional({ example: '$120,000 - $150,000' })
   @IsOptional()
