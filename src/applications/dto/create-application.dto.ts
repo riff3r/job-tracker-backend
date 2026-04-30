@@ -15,13 +15,13 @@ export class CreateApplicationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  company: string;
+  company!: string;
 
   @ApiProperty({ example: 'Software Engineer' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  role: string;
+  role!: string;
 
   @ApiPropertyOptional({ example: 'https://jobs.example.com/123' })
   @IsOptional()
