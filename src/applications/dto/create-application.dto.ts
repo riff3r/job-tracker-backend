@@ -51,7 +51,7 @@ export class CreateApplicationDto {
   @MaxLength(5000)
   notes?: string;
 
-  @ApiPropertyOptional({ enum: ApplicationStatus, default: ApplicationStatus.WISHLIST })
+  @ApiPropertyOptional({ enum: ApplicationStatus, default: ApplicationStatus.APPLIED })
   @IsOptional()
   @IsEnum(ApplicationStatus)
   status?: ApplicationStatus;

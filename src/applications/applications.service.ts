@@ -24,7 +24,7 @@ export class ApplicationsService {
         salary: dto.salary,
         expectedSalary: dto.expectedSalary,
         notes: dto.notes,
-        status: dto.status ?? ApplicationStatus.WISHLIST,
+        status: dto.status ?? ApplicationStatus.APPLIED,
         appliedAt: dto.appliedAt ? new Date(dto.appliedAt) : undefined,
         followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : undefined,
       },

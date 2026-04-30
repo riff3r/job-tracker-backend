@@ -54,7 +54,7 @@ model Application {
   salary         String?
   expectedSalary String?
   notes          String?
-  status       ApplicationStatus @default(WISHLIST)
+  status       ApplicationStatus @default(APPLIED)
   appliedAt    DateTime?
   followUpDate DateTime?
   deletedAt    DateTime?
