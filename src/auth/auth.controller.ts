@@ -30,22 +30,9 @@ import { RegisterDto } from './dto/register.dto';
 import type { User } from '@prisma/client';
 import { GoogleUser } from './strategies/google.strategy';
 
-const COOKIE_NAME = 'refreshToken';
-const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
-function setRefreshCookie(res: Response, token: string): void {
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: false, // set to true in production (HTTPS)
-    sameSite: 'lax',
-    maxAge: COOKIE_MAX_AGE_MS,
-    path: '/',
-  });
-}
-
-function clearRefreshCookie(res: Response): void {
-  res.clearCookie(COOKIE_NAME, { path: '/' });
-}
+const REFRESH_COOKIE = 'refreshToken';
+// Must match JWT_REFRESH_EXPIRES_IN in .env (7d)
+const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -54,6 +41,28 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {}
+
+  // ── Cookie helpers ────────────────────────────────────────────────────────
+
+  private get isProduction(): boolean {
+    return this.configService.get<string>('NODE_ENV') === 'production';
+  }
+
+  private setRefreshCookie(res: Response, token: string): void {
+    res.cookie(REFRESH_COOKIE, token, {
+      httpOnly: true,            // not accessible via JS
+      secure: this.isProduction, // HTTPS only in production
+      sameSite: 'lax',           // CSRF protection; 'lax' allows OAuth top-level redirects
+      maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+      path: '/',
+    });
+  }
+
+  private clearRefreshCookie(res: Response): void {
+    res.clearCookie(REFRESH_COOKIE, { path: '/' });
+  }
+
+  // ── Routes ────────────────────────────────────────────────────────────────
 
   @Public()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
@@ -68,7 +77,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...body } = await this.authService.register(dto);
-    setRefreshCookie(res, refreshToken);
+    this.setRefreshCookie(res, refreshToken);
     return body;
   }
 
@@ -85,7 +94,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...body } = await this.authService.login(dto);
-    setRefreshCookie(res, refreshToken);
+    this.setRefreshCookie(res, refreshToken);
     return body;
   }
 
@@ -100,12 +109,12 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const rawToken = (req.cookies as Record<string, string>)[COOKIE_NAME];
+    const rawToken = req.cookies[REFRESH_COOKIE] as string | undefined;
     if (!rawToken) {
       throw new UnauthorizedException('No refresh token cookie');
     }
     const { refreshToken, ...body } = await this.authService.refresh(rawToken);
-    setRefreshCookie(res, refreshToken);
+    this.setRefreshCookie(res, refreshToken);
     return body;
   }
 
@@ -120,8 +129,8 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const rawToken = (req.cookies as Record<string, string>)[COOKIE_NAME];
-    clearRefreshCookie(res);
+    const rawToken = req.cookies[REFRESH_COOKIE] as string | undefined;
+    this.clearRefreshCookie(res);
     if (rawToken) {
       return this.authService.logout(rawToken);
     }
@@ -148,7 +157,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const tokens = await this.authService.googleLogin(req.user as GoogleUser);
-    setRefreshCookie(res, tokens.refreshToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
     const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
     const url = `${frontendUrl}/auth/google/callback?accessToken=${tokens.accessToken}`;
     return { url, statusCode: HttpStatus.FOUND };

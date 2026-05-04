@@ -106,34 +106,33 @@ export class AuthService {
   async refresh(rawRefreshToken: string): Promise<TokenPair> {
     const hashed = this.hashToken(rawRefreshToken);
 
-    const record = await this.prisma.refreshToken.findFirst({
-      where: {
-        token: hashed,
-        expiresAt: { gt: new Date() },
-      },
-      include: { user: true },
+    // Find and consume the token inside a transaction so that concurrent
+    // requests with the same cookie can't both pass the existence check
+    // before one of them deletes the record (TOCTOU race condition).
+    const record = await this.prisma.$transaction(async (tx) => {
+      const found = await tx.refreshToken.findFirst({
+        where: { token: hashed, expiresAt: { gt: new Date() } },
+        include: { user: true },
+      });
+
+      if (!found) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+
+      // deleteMany returns a count instead of throwing when the row is gone,
+      // which handles the residual race window inside the transaction.
+      const { count } = await tx.refreshToken.deleteMany({
+        where: { id: found.id },
+      });
+
+      if (count === 0) {
+        throw new UnauthorizedException('Refresh token already used');
+      }
+
+      return found;
     });
 
-    if (!record) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-
-    const user = record.user;
-
-    // Rotate — delete old token atomically.
-    // deleteMany never throws when the record is missing (unlike delete), which
-    // prevents a 500 crash when React StrictMode double-invokes the effect and
-    // both requests race to delete the same token simultaneously.
-    const deleted = await this.prisma.refreshToken.deleteMany({
-      where: { id: record.id },
-    });
-
-    if (deleted.count === 0) {
-      // Token was already consumed by a concurrent request (or a reuse attempt)
-      throw new UnauthorizedException('Refresh token already used');
-    }
-
-    return this.generateTokens(user);
+    return this.generateTokens(record.user);
   }
 
   async logout(rawRefreshToken: string): Promise<{ message: string }> {
@@ -177,6 +176,12 @@ export class AuthService {
         expiresAt,
       },
     });
+
+    // Purge any expired tokens for this user — fire-and-forget so it never
+    // delays the login/refresh response.
+    this.prisma.refreshToken
+      .deleteMany({ where: { userId: user.id, expiresAt: { lt: new Date() } } })
+      .catch(() => {/* non-critical — ignore failures */});
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _omit, ...sanitizedUser } = user;
