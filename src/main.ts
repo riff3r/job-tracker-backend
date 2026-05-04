@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
@@ -12,8 +13,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  app.use(cookieParser());
   app.setGlobalPrefix('v1');
-  app.enableCors({ origin: configService.get<string>('FRONTEND_URL') });
+  app.enableCors({
+    origin: configService.getOrThrow<string>('FRONTEND_URL'),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   app.useGlobalFilters(new HttpExceptionFilter());
 

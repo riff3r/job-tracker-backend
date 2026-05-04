@@ -120,8 +120,18 @@ export class AuthService {
 
     const user = record.user;
 
-    // Rotate — delete old token
-    await this.prisma.refreshToken.delete({ where: { id: record.id } });
+    // Rotate — delete old token atomically.
+    // deleteMany never throws when the record is missing (unlike delete), which
+    // prevents a 500 crash when React StrictMode double-invokes the effect and
+    // both requests race to delete the same token simultaneously.
+    const deleted = await this.prisma.refreshToken.deleteMany({
+      where: { id: record.id },
+    });
+
+    if (deleted.count === 0) {
+      // Token was already consumed by a concurrent request (or a reuse attempt)
+      throw new UnauthorizedException('Refresh token already used');
+    }
 
     return this.generateTokens(user);
   }
